@@ -1,4 +1,4 @@
-package stats
+package main
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
   "stats"
 	"github.com/docker/libcontainer/cgroups"
 	"github.com/docker/libcontainer/system"
@@ -29,13 +30,11 @@ func (s *CpuacctGroup) GetStats(path string, metric *cgroups.Stats) error {
 	}
 
 	totalUsage, err := stats.GetCgroupParamUint(path, "cpuacct.usage")
-  fmt.Println("totalUsage", totalUsage)
 	if err != nil {
 		return err
 	}
 
 	percpuUsage, err := getPercpuUsage(path)
-  fmt.Println("percpuUsage", percpuUsage)
 	if err != nil {
 		return err
 	}
@@ -106,17 +105,31 @@ func getPercpuUsage(path string) ([]uint64, error) {
 	return percpuUsage, nil
 }
 
-/*
 func main()  {
 
-  sysfs_path := "/sys/fs/cgroup/cpuacct/system.slice/docker-8f32af9ace20e3001195dc6388f0f7d00fd6ada516bbcc645dd49f7997b23b61.scope"
-  var stats cgroups.Stats
+  sysfs_path := "/sys/fs/cgroup/cpuacct/system.slice/docker-b9d1fa3b40ac74244cd7f3cc3893d70bf2c62fa65ebfdb7d6a62142fddb8c04b.scope"
+  var metrics cgroups.Stats
   var x CpuacctGroup
+  var curCpu, prevCpu uint64 = 0,0
+  var curTime, prevTime time.Time
+ 
+	prevCpu = metrics.CpuStats.CpuUsage.TotalUsage
+	prevTime = time.Now()
+  time.Sleep(time.Second)
 
-	err := x.GetStats(sysfs_path, &stats)
+  for {
+		curCpu = metrics.CpuStats.CpuUsage.TotalUsage
+		curTime = time.Now()
 
-  fmt.Println("stats", stats)
-  fmt.Println("err", err)
+		x.GetStats(sysfs_path, &metrics)
+    fmt.Println("prevCpu=", prevCpu)
+    fmt.Println("curCpu=", curCpu)
+    fmt.Println("diff Time=", curTime.Sub(prevTime))
+    fmt.Println("diff Cpu=", curCpu - prevCpu)
+    fmt.Println(" Cpu(%)=", (float64(curCpu - prevCpu) / float64(curTime.Sub(prevTime))))
 
+    prevCpu = curCpu
+    prevTime = curTime
+    time.Sleep(time.Second)
+  }
 }
-*/
